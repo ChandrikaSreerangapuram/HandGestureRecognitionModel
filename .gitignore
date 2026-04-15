@@ -1,0 +1,13 @@
+# Ignore dataset
+archive/
+
+# Ignore models
+*.pth
+checkpoints/
+
+# Ignore logs
+*.log
+*.txt
+
+# Ignore cache
+__pycache__/
