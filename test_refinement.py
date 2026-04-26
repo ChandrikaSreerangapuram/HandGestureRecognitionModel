@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
 from gemini_integration import GeminiRefiner
+
+load_dotenv()
 
 def test_refinement_logic():
     # Mocking what happens in realtime.py
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_API_KEY_HERE")
-    refiner = GeminiRefiner(GEMINI_API_KEY)q4
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    refiner = GeminiRefiner(GEMINI_API_KEY)
     
     # Test Case 1: Initial glosses
     sentence_glosses = ["HELLO", "ME", "NAME", "CHANDRIKA"]

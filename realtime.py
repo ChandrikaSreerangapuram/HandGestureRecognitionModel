@@ -6,9 +6,12 @@ import os
 import pyttsx3
 import datetime
 import time
+from dotenv import load_dotenv
 from model_hybrid import HybridASLModel
 from preprocess import extract_landmarks
 from gemini_integration import GeminiRefiner
+
+load_dotenv()
 
 # Initialize MediaPipe
 mp_holistic = mp.solutions.holistic
@@ -79,8 +82,10 @@ def realtime_inference():
     
     # --- Setup Webcam ---
     cap = None
+    import platform
+    backend = cv2.CAP_DSHOW if platform.system() == 'Windows' else cv2.CAP_ANY
     for idx in [0, 1, 2]:
-        cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(idx, backend)
         if cap.isOpened():
             print(f"Webcam opened at index {idx}")
             break

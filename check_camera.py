@@ -1,11 +1,12 @@
 import cv2
+import platform
 
 def test_cameras():
     # Try indices 0 to 5
+    backend = cv2.CAP_DSHOW if platform.system() == 'Windows' else cv2.CAP_ANY
     for i in range(5):
         print(f"Testing camera index {i}...")
-        # Use CAP_DSHOW on Windows for faster/more reliable initialization
-        cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(i, backend)
         if cap.isOpened():
             print(f"SUCCESS: Camera found at index {i}")
             ret, frame = cap.read()
