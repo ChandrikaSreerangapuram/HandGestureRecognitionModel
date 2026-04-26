@@ -62,7 +62,11 @@ def realtime_inference():
     
     # Gemini Refiner
     # Recommendation: Set GEMINI_API_KEY environment variable
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_API_KEY_HERE")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    if not GEMINI_API_KEY:
+        print("WARNING: GEMINI_API_KEY not found in environment or .env file.")
+        print("Gemini refinement will not work. Set it in your .env file.")
+        GEMINI_API_KEY = ""
     refiner = GeminiRefiner(GEMINI_API_KEY)
     
     # TTS
