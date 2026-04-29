@@ -37,21 +37,31 @@ def load_labels(label_path, num_classes=300):
 
 def realtime_inference():
     # --- Configuration ---
-    NUM_CLASSES = 300
-    CONFIDENCE_THRESHOLD = 0.01  # Lowered from 0.5 because model confidence is currently low
-    STABILITY_FRAMES = 5       # Lowered from 8 to make it faster to recognize
-    PAUSE_FRAMES = 35          # Slightly faster pause detection
+    NUM_CLASSES = 50
+    CONFIDENCE_THRESHOLD = 0.2  # Higher threshold for cleaner predictions
+    STABILITY_FRAMES = 5
+    PAUSE_FRAMES = 35
     SEQUENCE_LENGTH = 60
     
     device = torch.device("cpu") # Use "cuda" if available
     LABELS = load_labels(os.path.join('archive', 'wlasl_class_list.txt'), NUM_CLASSES)
+    
+    # Load class_map if exists (maps original class indices to 0..N)
+    class_map_path = os.path.join('checkpoints', 'class_map.json')
+    reverse_class_map = None
+    if os.path.exists(class_map_path):
+        import json as json_lib
+        with open(class_map_path, 'r') as f:
+            class_map = json_lib.load(f)
+        # reverse: model output index -> original class index
+        reverse_class_map = {v: int(k) for k, v in class_map.items()}
     
     # Initialize Log
     with open('realtime_output.log', 'w', encoding='utf-8') as f:
         f.write(f"--- ASL Sentence System Started: {datetime.datetime.now()} ---\n")
 
     # Load model
-    model = HybridASLModel(num_classes=NUM_CLASSES)
+    model = HybridASLModel(input_dim=459, hidden_dim=128, num_classes=NUM_CLASSES, num_layers=2, dropout=0.5)
     checkpoint_path = os.path.join('checkpoints', 'best_asl_model.pth')
     if os.path.exists(checkpoint_path):
         model.load_state_dict(torch.load(checkpoint_path, map_location=device))
@@ -126,7 +136,8 @@ def realtime_inference():
                 if len(sequence) == SEQUENCE_LENGTH:
                     input_data = np.array(sequence).astype(np.float32)
                     velocity = np.diff(input_data, axis=0, append=input_data[-1:])
-                    features = np.concatenate([input_data, velocity], axis=-1)
+                    acceleration = np.diff(velocity, axis=0, append=velocity[-1:])
+                    features = np.concatenate([input_data, velocity, acceleration], axis=-1)
 
                     with torch.no_grad():
                         input_tensor = torch.tensor(features).unsqueeze(0).to(device)
@@ -135,7 +146,13 @@ def realtime_inference():
                         confidence, predicted_idx = torch.max(probs, 1)
                         
                     conf_val = confidence.item()
-                    gloss = LABELS.get(predicted_idx.item(), "Unknown")
+                    pred_idx = predicted_idx.item()
+                    # Map model output back to original class index
+                    if reverse_class_map:
+                        original_idx = reverse_class_map.get(pred_idx, pred_idx)
+                    else:
+                        original_idx = pred_idx
+                    gloss = LABELS.get(original_idx, "Unknown")
                     
                     # Log for debugging
                     if conf_val > 0.1: # Only log non-negligible predictions
